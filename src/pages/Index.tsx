@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/HeroSection";
 import { CatalogSection } from "@/components/CatalogSection";
@@ -7,17 +8,19 @@ import { Footer } from "@/components/Footer";
 import { ChatBot } from "@/components/ChatBot";
 
 const Index = () => {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <main>
-        <HeroSection />
+        <HeroSection onOpenChat={() => setIsChatOpen(true)} />
         <CatalogSection />
         <RoomVisualizerSection />
         <ARSection />
       </main>
       <Footer />
-      <ChatBot />
+      <ChatBot isOpen={isChatOpen} onOpenChange={setIsChatOpen} />
     </div>
   );
 };

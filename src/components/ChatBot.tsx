@@ -27,6 +27,11 @@ interface ConversationMessage {
   content: string;
 }
 
+interface ChatBotProps {
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
 const initialMessages: Message[] = [
   {
     id: "1",
@@ -43,8 +48,18 @@ const suggestions = [
   "Rekomendasi furniture budget 8 juta",
 ];
 
-export function ChatBot() {
-  const [isOpen, setIsOpen] = useState(false);
+export function ChatBot({ isOpen: controlledIsOpen, onOpenChange }: ChatBotProps) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  
+  // Support both controlled and uncontrolled modes
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+  const setIsOpen = (open: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(open);
+    } else {
+      setInternalIsOpen(open);
+    }
+  };
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -161,15 +176,15 @@ export function ChatBot() {
         <MessageCircle className="w-6 h-6 text-primary-foreground" />
       </motion.button>
 
-      {/* Chat Window */}
+      {/* Chat Window - Fullscreen */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 100, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 100, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", damping: 25 }}
-            className="fixed bottom-6 right-6 z-50 w-[400px] max-w-[calc(100vw-3rem)] h-[600px] max-h-[calc(100vh-6rem)] bg-card rounded-3xl shadow-lg border border-border flex flex-col overflow-hidden"
+            className="fixed inset-0 z-50 bg-card flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-gradient-card">

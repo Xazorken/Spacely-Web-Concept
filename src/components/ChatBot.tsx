@@ -42,7 +42,7 @@ const initialMessages: Message[] = [
 ];
 
 const suggestions = [
-  "Budget 5.000.000,sofa 1 chair 2",
+  "Budget 5.000.000 sofa 1 chair 2",
   "Budget Rp 10.000.000 untuk table dan bed",
   "Budget 3 juta, cari desk untuk kerja",
   "Rekomendasi furniture budget 8 juta",

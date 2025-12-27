@@ -3,7 +3,11 @@ import { MessageCircle, Camera, Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/hero-living-room.jpg";
 
-export function HeroSection() {
+interface HeroSectionProps {
+  onOpenChat?: () => void;
+}
+
+export function HeroSection({ onOpenChat }: HeroSectionProps) {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden bg-gradient-hero">
       {/* Background Pattern */}
@@ -41,7 +45,7 @@ export function HeroSection() {
                 Mulai Eksplorasi
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </Button>
-              <Button variant="outline" size="xl">
+              <Button variant="outline" size="xl" onClick={onOpenChat}>
                 <MessageCircle className="w-5 h-5" />
                 Chat dengan AI
               </Button>

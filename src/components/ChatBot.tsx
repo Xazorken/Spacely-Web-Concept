@@ -8,11 +8,12 @@ import {
   Sparkles,
   User,
   Bot,
-  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
@@ -21,20 +22,25 @@ interface Message {
   image?: string;
 }
 
+interface ConversationMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 const initialMessages: Message[] = [
   {
     id: "1",
     role: "assistant",
     content:
-      "Halo! Saya adalah asisten AI Spacely. Saya bisa membantu kamu menemukan furniture yang cocok dengan budget dan selera kamu. Apa yang sedang kamu cari?",
+      "Halo! Saya adalah asisten AI Spacely dengan algoritma rekomendasi furniture cerdas. Saya bisa membantu kamu menemukan furniture sesuai budget dan kebutuhan. Coba sebutkan budget dan kategori furniture yang kamu butuhkan! 🛋️",
   },
 ];
 
 const suggestions = [
-  "Sofa untuk ruang tamu kecil budget 5 juta",
-  "Rekomendasi meja makan keluarga",
-  "Furniture kamar tidur minimalis",
-  "Set ruang kerja work from home",
+  "Budget 5.000.000, butuh sofa 1 dan chair 2",
+  "Budget Rp 10.000.000 untuk table dan bed",
+  "Budget 3 juta, cari desk untuk kerja",
+  "Rekomendasi furniture budget 8 juta",
 ];
 
 export function ChatBot() {
@@ -55,7 +61,7 @@ export function ChatBot() {
 
   const handleSend = async (text?: string) => {
     const messageText = text || input;
-    if (!messageText.trim()) return;
+    if (!messageText.trim() || isTyping) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -67,23 +73,48 @@ export function ChatBot() {
     setInput("");
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const responses = [
-        "Berdasarkan budget dan preferensi kamu, saya merekomendasikan beberapa pilihan furniture yang cocok. Untuk sofa, kamu bisa melihat koleksi Cloud Comfort series kami yang nyaman dan terjangkau.",
-        "Untuk ruang tamu kecil, saya sarankan furniture dengan desain minimalis dan multifungsi. Ini akan memaksimalkan ruangan tanpa terlihat penuh.",
-        "Apakah kamu ingin saya menampilkan visualisasi furniture di ruanganmu? Kamu bisa upload foto ruangan untuk melihat preview langsung.",
-      ];
-      
+    try {
+      // Build conversation history for context
+      const conversationHistory: ConversationMessage[] = messages
+        .filter(m => m.id !== "1") // Exclude initial greeting
+        .map(m => ({ role: m.role, content: m.content }));
+
+      const { data, error } = await supabase.functions.invoke('furniture-chat', {
+        body: { 
+          message: messageText,
+          conversationHistory 
+        }
+      });
+
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Gagal menghubungi layanan");
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: responses[Math.floor(Math.random() * responses.length)],
+        content: data.response || "Maaf, saya tidak dapat memproses permintaan Anda saat ini.",
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error("Chat error:", error);
+      toast.error(error instanceof Error ? error.message : "Terjadi kesalahan");
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Maaf, terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi.",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,18 +129,17 @@ export function ChatBot() {
           image: e.target?.result as string,
         };
         setMessages((prev) => [...prev, imageMessage]);
-        setIsTyping(true);
-
+        
+        // For now, show a simple response for image uploads
         setTimeout(() => {
           const assistantMessage: Message = {
             id: (Date.now() + 1).toString(),
             role: "assistant",
             content:
-              "Terima kasih atas foto ruangannya! Saya melihat ruangan dengan pencahayaan natural yang bagus. Berdasarkan dimensi dan gaya ruangan, saya merekomendasikan: \n\n1. Sofa minimalis 2-seater dengan warna netral\n2. Coffee table kayu oak natural\n3. Lampu lantai dengan desain modern\n\nApakah kamu ingin melihat visualisasi furniture ini di ruanganmu?",
+              "Terima kasih atas foto ruangannya! Untuk rekomendasi furniture terbaik, silakan sebutkan budget dan kategori furniture yang kamu butuhkan. Contoh: 'Budget 5 juta, butuh sofa dan meja'",
           };
           setMessages((prev) => [...prev, assistantMessage]);
-          setIsTyping(false);
-        }, 2000);
+        }, 1000);
       };
       reader.readAsDataURL(file);
     }
